@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web GIS with Node.js</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 600px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Harita Üzerinde İşlemler</h1>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([51.505, -0.09], 13); // Harita başlangıç koordinatları
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Nokta eklemek için
+    let newMarker;
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+
+      // Yeni bir nokta ekle
+      newMarker = L.marker([lat, lng]).addTo(map);
+      newMarker.bindPopup("Yeni Nokta: " + lat + ", " + lng).openPopup();
+
+      // Nokta ekleme verisini backend'e gönder
+      addPoint(lat, lng, 10); // Örnek olarak 10 metre yükseklik
+    });
+
+    // Nokta ekleme işlemi
+    function addPoint(lat, lng, height) {
+      fetch('http://localhost:3000/api/points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, height })
+      })
+      .then(response => response.json())
+      .then(data => console.log('Point added:', data))
+      .catch(error => console.error('Error:', error));
+    }
+
+    // Nokta Silme işlemi
+    function removeMarker() {
+      if (newMarker) {
+        map.removeLayer(newMarker);  // Haritadan noktayı kaldır
+      }
+    }
+
+    // GeoJSON dışa aktarma
+    function exportGeoJSON() {
+      const geojsonData = map.toGeoJSON();
+      console.log(JSON.stringify(geojsonData));  // GeoJSON verisini JSON formatında yazdır
+    }
+  </script>
+</body>
+</html>
